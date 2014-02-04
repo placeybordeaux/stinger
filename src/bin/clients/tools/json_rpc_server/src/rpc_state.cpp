@@ -16,7 +16,7 @@ JSON_RPCServerState::get_server_state() {
   return state;
 }
 
-JSON_RPCServerState::JSON_RPCServerState() : 
+JSON_RPCServerState::JSON_RPCServerState() :
   next_session_id(1), session_lock(0),
   max_sessions(20), StingerMon()
 {
@@ -67,7 +67,7 @@ JSON_RPCServerState::has_rpc_session(std::string name)
 }
 
 void
-JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz, 
+JSON_RPCServerState::update_algs(stinger_t * stinger_copy, std::string new_loc, int64_t new_sz,
   std::vector<StingerAlgState *> * new_algs, std::map<std::string, StingerAlgState *> * new_alg_map,
   const StingerBatch & batch)
 {
@@ -95,108 +95,111 @@ bool
 JSON_RPCFunction::contains_params(rpc_params_t * p, rapidjson::Value * params)
 {
   if (!params)
-    return true;
+    return true; //shouldn't this return false?
+
+  if (!params->IsObject()) //if params' isn't an object it can't contain stuff
+    return false;
 
   while(p->name) {
     if(!params->HasMember(p->name)) {
       if(p->optional) {
-	switch(p->type) {
-	  case TYPE_INT64: {
-	    *((int64_t *)p->output) = p->def;
-	  } break;
-	  case TYPE_STRING: {
-	    *((char **)p->output) = (char *) p->def;
-	  } break;
-	  case TYPE_DOUBLE: {
-	    *((double *)p->output) = (double) p->def;
-	  } break;
-	  case TYPE_BOOL: {
-	    *((bool *)p->output) = (bool) p->def;
-	  } break;
-	  case TYPE_ARRAY: {
-	    params_array_t * ptr = (params_array_t *) p->output;
-	    ptr->len = 0;
-	    ptr->arr = NULL;
-	  } break;
-	}
-      } else {
-	return false;
-      }
-    }
-    else {
+       switch(p->type) {
+         case TYPE_INT64: {
+           *((int64_t *)p->output) = p->def;
+         } break;
+         case TYPE_STRING: {
+           *((char **)p->output) = (char *) p->def;
+         } break;
+         case TYPE_DOUBLE: {
+           *((double *)p->output) = (double) p->def;
+         } break;
+         case TYPE_BOOL: {
+           *((bool *)p->output) = (bool) p->def;
+         } break;
+         case TYPE_ARRAY: {
+           params_array_t * ptr = (params_array_t *) p->output;
+           ptr->len = 0;
+           ptr->arr = NULL;
+         } break;
+       }
+     } else {
+       return false;
+     }
+   }
+   else {
 
-      stinger_t * S = server_state->get_stinger();
-      switch(p->type) {
-	case TYPE_VERTEX: {
-	  if((*params)[p->name].IsInt64()) {
-	    int64_t tmp = (*params)[p->name].GetInt64();
-	    if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES)
-	      return false;
-	    *((int64_t *)p->output) = tmp;
-	  }
-	  else if((*params)[p->name].IsString()) {
-	    int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name].GetString(), (*params)[p->name].GetStringLength());
-	    if (tmp == -1)
-	      return false;
-	    *((int64_t *)p->output) = tmp;
-	  }
-	  else {
-	    return false;
-	  }
-	} break;
-	case TYPE_INT64: {
-	  if(!(*params)[p->name].IsInt64()) {
-	    return false;
-	  }
-	  *((int64_t *)p->output) = (*params)[p->name].GetInt64();
-	} break;
-	case TYPE_STRING: {
-	  if(!(*params)[p->name].IsString()) {
-	    return false;
-	  }
-	  *((char **)p->output) = (char *) (*params)[p->name].GetString();
-	} break;
-	case TYPE_DOUBLE: {
-	  if(!(*params)[p->name].IsDouble()) {
-	    return false;
-	  }
-	  *((double *)p->output) = (*params)[p->name].GetDouble();
-	} break;
-	case TYPE_BOOL: {
-	  if(!(*params)[p->name].IsBool()) {
-	    return false;
-	  }
-	  *((bool *)p->output) = (*params)[p->name].GetBool();
-	} break;
-	case TYPE_ARRAY: {
-	  if(!(*params)[p->name].IsArray()) {
-	    return false;
-	  }
-	  params_array_t * ptr = (params_array_t *) p->output;
-	  ptr->len = (*params)[p->name].Size();
-	  ptr->arr = (int64_t *) xmalloc(sizeof(int64_t) * ptr->len);
-	  for (int64_t i = 0; i < ptr->len; i++) {
-	    if ((*params)[p->name][i].IsInt64()) {
-	      int64_t tmp = (*params)[p->name][i].GetInt64();
-	      if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES) {
-		return false;
-	      }
-	      ptr->arr[i] = tmp;
-	    }
-	    else if ((*params)[p->name][i].IsString()) {
-	      int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name][i].GetString(), (*params)[p->name][i].GetStringLength());
-	      if (tmp == -1) {
-		return false;
-	      }
-	      ptr->arr[i] = tmp;
-	    }
-	  }
-	} break;
+    stinger_t * S = server_state->get_stinger();
+    switch(p->type) {
+     case TYPE_VERTEX: {
+       if((*params)[p->name].IsInt64()) {
+         int64_t tmp = (*params)[p->name].GetInt64();
+         if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES)
+           return false;
+         *((int64_t *)p->output) = tmp;
+       }
+       else if((*params)[p->name].IsString()) {
+         int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name].GetString(), (*params)[p->name].GetStringLength());
+         if (tmp == -1)
+           return false;
+         *((int64_t *)p->output) = tmp;
+       }
+       else {
+         return false;
+       }
+     } break;
+     case TYPE_INT64: {
+       if(!(*params)[p->name].IsInt64()) {
+         return false;
+       }
+       *((int64_t *)p->output) = (*params)[p->name].GetInt64();
+     } break;
+     case TYPE_STRING: {
+       if(!(*params)[p->name].IsString()) {
+         return false;
+       }
+       *((char **)p->output) = (char *) (*params)[p->name].GetString();
+     } break;
+     case TYPE_DOUBLE: {
+       if(!(*params)[p->name].IsDouble()) {
+         return false;
+       }
+       *((double *)p->output) = (*params)[p->name].GetDouble();
+     } break;
+     case TYPE_BOOL: {
+       if(!(*params)[p->name].IsBool()) {
+         return false;
+       }
+       *((bool *)p->output) = (*params)[p->name].GetBool();
+     } break;
+     case TYPE_ARRAY: {
+       if(!(*params)[p->name].IsArray()) {
+         return false;
+       }
+       params_array_t * ptr = (params_array_t *) p->output;
+       ptr->len = (*params)[p->name].Size();
+       ptr->arr = (int64_t *) xmalloc(sizeof(int64_t) * ptr->len);
+       for (int64_t i = 0; i < ptr->len; i++) {
+         if ((*params)[p->name][i].IsInt64()) {
+           int64_t tmp = (*params)[p->name][i].GetInt64();
+           if (tmp < 0 || tmp >= STINGER_MAX_LVERTICES) {
+            return false;
+          }
+          ptr->arr[i] = tmp;
+        }
+        else if ((*params)[p->name][i].IsString()) {
+         int64_t tmp = stinger_mapping_lookup(S, (*params)[p->name][i].GetString(), (*params)[p->name][i].GetStringLength());
+         if (tmp == -1) {
+          return false;
+        }
+        ptr->arr[i] = tmp;
       }
     }
-    p++;
-  }
-  return true;
+  } break;
+}
+}
+p++;
+}
+return true;
 }
 
 void
